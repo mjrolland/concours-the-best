@@ -1,0 +1,129 @@
+---
+title: "Concours #thebest"
+author: "M. Rolland"
+date: today
+format: html
+toc: true
+number-sections: true
+execute: 
+  echo: false
+  warning: false
+  error: false
+---
+
+```{r}
+library(tidyverse)
+library(gt)
+```
+
+```{r}
+# import data
+data_raw <- rio::import("concours.xlsx")
+```
+
+# Les participants
+
+- Nombre de participants: `r nrow(data_raw)`
+- Par sexe
+  - Garçons: `r data_raw |> filter(sexe == "M") |> nrow()` 
+  - Filles: `r data_raw |> filter(sexe == "F") |> nrow()` 
+- Par classe d'âge
+  - Jeunes: `r data_raw |> filter(age_c == "jeune") |> nrow()`
+  - Vieux: `r data_raw |> filter(age_c == "vieux") |> nrow()`
+
+# Score total
+
+::: {.panel-tabset}
+
+## Tout le monde
+
+```{r}
+data_raw <- data_raw |>
+  mutate(
+    score_total = rowSums(pick(petanque:parfum), na.rm = TRUE)
+  )
+```
+
+```{r}
+#| label: fig-histtotal
+#| fig-cap: Distribution score total
+#| fig-height: 3
+#| fig-width: 5
+
+data_raw |>
+  ggplot(
+    aes(
+      x = score_total
+    )
+  ) +
+  geom_histogram() +
+  see::theme_lucid()
+```
+
+## Par sexe
+
+```{r}
+#| label: fig-totalbysex
+#| fig-cap: Distribution score total par sexe
+#| fig-width: 3
+#| fig-height: 4
+
+data_raw |>
+  ggplot(
+    aes(
+      x = sexe,
+      y = score_total,
+      fill = sexe
+    )
+  ) +
+  geom_boxplot() +
+  see::theme_lucid() +
+  see::scale_fill_material_d()
+```
+
+## Par classe d'âge
+
+```{r}
+#| label: fig-totalbyage
+#| fig-cap: Distribution score total par catégorie d'age
+#| fig-width: 3
+#| fig-height: 4
+
+data_raw |>
+  ggplot(
+    aes(
+      x = age_c,
+      y = score_total,
+      fill = age_c
+    )
+  ) +
+  geom_boxplot() +
+  see::theme_lucid() +
+  see::scale_fill_material_d()
+```
+
+:::
+
+# Les jeux
+
+```{r}
+data_jeux <- data_raw |>
+  select(prenom, petanque, chamboule_tout, hache, foot, chaise)
+```
+
+
+
+# La pastèque
+
+# Les chaises musicales
+
+
+
+# Annexe
+
+```{r}
+#| label: tbl-rawdata
+#| tbl-cap: Données brutes
+data_raw |> gt()
+```
+
