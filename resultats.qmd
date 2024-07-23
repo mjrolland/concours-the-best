@@ -21,6 +21,17 @@ library(gt)
 data_raw <- rio::import("concours.xlsx")
 ```
 
+```{r}
+# data preparation
+data_work <- data_raw |>
+  mutate(
+    score_total = rowSums(pick(petanque:parfum), na.rm = TRUE),
+    score_jeux = rowSums(pick(c(petanque, chamboule_tout, hache, foot, chaise)), na.rm = TRUE),
+    pasteque_diff = pasteque_l - 8.45,
+    pasteque_diff_abs = abs(pasteque_diff)
+  )
+```
+
 # Les participants
 
 - Nombre de participants: `r nrow(data_raw)`
@@ -38,37 +49,44 @@ data_raw <- rio::import("concours.xlsx")
 ## Tout le monde
 
 ```{r}
-data_raw <- data_raw |>
-  mutate(
-    score_total = rowSums(pick(petanque:parfum), na.rm = TRUE)
-  )
-```
-
-```{r}
 #| label: fig-histtotal
 #| fig-cap: Distribution score total
 #| fig-height: 3
 #| fig-width: 5
 
-data_raw |>
+data_work |>
   ggplot(
     aes(
       x = score_total
     )
   ) +
-  geom_histogram() +
-  see::theme_lucid()
+  geom_histogram(binwidth = 5) +
+  see::theme_lucid() +
+  scale_x_continuous(breaks = scales::breaks_pretty()) +
+  labs(
+    y = "Score total",
+    x = "N"
+  )
 ```
+
+Interprétation:
+
+- Score le plus bas: `r min(data_work$score_total, na.rm = TRUE)`
+- Score le plus élevé: `r max(data_work$score_total, na.rm = TRUE)`
+- Score moyen: `r round(mean(data_work$score_total, na.rm = TRUE))`
 
 ## Par sexe
 
 ```{r}
 #| label: fig-totalbysex
 #| fig-cap: Distribution score total par sexe
-#| fig-width: 3
+#| fig-width: 2
 #| fig-height: 4
 
-data_raw |>
+data_work |>
+  mutate(
+    sexe = ifelse(sexe == "F", "Filles", "Garçons")
+  ) |>
   ggplot(
     aes(
       x = sexe,
@@ -78,18 +96,33 @@ data_raw |>
   ) +
   geom_boxplot() +
   see::theme_lucid() +
-  see::scale_fill_material_d()
+  theme(
+    legend.position = "none"
+  ) +
+  see::scale_fill_material_d() +
+  labs(
+    fill = "Sexe",
+    y = "Score total",
+    x = " "
+  )
 ```
+
+Interprétation:
+
+Le score moyen des filles est plus bas que celui des garçons (`r round(mean(data_work$score_total[data_work$sexe == "F"], na.rm = TRUE))` VS `r round(mean(data_work$score_total[data_work$sexe == "M"], na.rm = TRUE))`) même si leur score médian a été plus élevé ((`r round(median(data_work$score_total[data_work$sexe == "F"], na.rm = TRUE))` VS `r round(median(data_work$score_total[data_work$sexe == "M"], na.rm = TRUE))`)): certaines filles très nulles ont pourri la moyenne générale des filles.
 
 ## Par classe d'âge
 
 ```{r}
 #| label: fig-totalbyage
 #| fig-cap: Distribution score total par catégorie d'age
-#| fig-width: 3
+#| fig-width: 2
 #| fig-height: 4
 
-data_raw |>
+data_work |>
+  mutate(
+    age_c = ifelse(age_c == "jeune", "Jeunes", "Vieux")
+  ) |>
   ggplot(
     aes(
       x = age_c,
@@ -99,25 +132,220 @@ data_raw |>
   ) +
   geom_boxplot() +
   see::theme_lucid() +
-  see::scale_fill_material_d()
+  theme(
+    legend.position = "none"
+  ) +
+  see::scale_fill_material_d() +
+  labs(
+    fill = "Classe d'âge",
+    y = "Score total",
+    x = " "
+  )
 ```
+
+Les jeunes ont été plus forts que les vieux, c'est sans appel.
 
 :::
 
 # Les jeux
 
+::: {.panel-tabset}
+
+## Tout le monde
+
+
 ```{r}
-data_jeux <- data_raw |>
-  select(prenom, petanque, chamboule_tout, hache, foot, chaise)
+#| label: fig-histjeux
+#| fig-cap: Distribution score jeux
+#| fig-height: 3
+#| fig-width: 5
+
+data_work |>
+  ggplot(
+    aes(
+      x = score_jeux
+    )
+  ) +
+  geom_histogram(binwidth = 5) +
+  see::theme_lucid() +
+  scale_x_continuous(breaks = scales::breaks_pretty()) +
+  labs(
+    y = "Score total",
+    x = "N"
+  )
 ```
 
+Interprétation:
 
+- Score le plus bas: `r min(data_work$score_jeux, na.rm = TRUE)`
+- Score le plus élevé: `r max(data_work$score_jeux, na.rm = TRUE)`
+- Score moyen: `r round(mean(data_work$score_jeux, na.rm = TRUE))`
+
+## Par sexe
+
+```{r}
+#| label: fig-jeuxbysex
+#| fig-cap: Distribution score jeux par sexe
+#| fig-width: 2
+#| fig-height: 4
+
+data_work |>
+  mutate(
+    sexe = ifelse(sexe == "F", "Filles", "Garçons")
+  ) |>
+  ggplot(
+    aes(
+      x = sexe,
+      y = score_total,
+      fill = sexe
+    )
+  ) +
+  geom_boxplot() +
+  see::theme_lucid() +
+  theme(
+    legend.position = "none"
+  ) +
+  see::scale_fill_material_d() +
+  labs(
+    fill = "Sexe",
+    y = "Score total",
+    x = " "
+  )
+```
+
+Interprétation:
+
+
+
+## Par classe d'âge
+
+```{r}
+#| label: fig-jeuxbyage
+#| fig-cap: Distribution score total par catégorie d'age
+#| fig-width: 2
+#| fig-height: 4
+
+data_work |>
+  mutate(
+    age_c = ifelse(age_c == "jeune", "Jeunes", "Vieux")
+  ) |>
+  ggplot(
+    aes(
+      x = age_c,
+      y = score_jeux,
+      fill = age_c
+    )
+  ) +
+  geom_boxplot() +
+  see::theme_lucid() +
+  theme(
+    legend.position = "none"
+  ) +
+  see::scale_fill_material_d() +
+  labs(
+    fill = "Classe d'âge",
+    y = "Score total",
+    x = " "
+  )
+```
+
+Les jeunes ont été plus forts que les vieux, c'est sans appel.
+
+:::
 
 # La pastèque
 
-# Les chaises musicales
+Poids exact = 8,45L
+
+::: {.panel-tabset}
+
+## Tout le monde
+
+```{r}
+#| label: fig-histdiff
+#| fig-cap: Distribution différence pastéque
+#| fig-height: 3
+#| fig-width: 5
+
+data_work |>
+  ggplot(
+    aes(
+      x = pasteque_diff
+    )
+  ) +
+  geom_histogram() +
+  geom_vline(xintercept = 0) +
+  see::theme_lucid()
+
+```
+## Par sexe
+
+```{r}
+#| label: fig-diffbysex
+#| fig-cap: Distribution score jeux par sexe
+#| fig-width: 2
+#| fig-height: 4
+
+data_work |>
+  mutate(
+    sexe = ifelse(sexe == "F", "Filles", "Garçons")
+  ) |>
+  ggplot(
+    aes(
+      x = sexe,
+      y = pasteque_diff,
+      fill = sexe
+    )
+  ) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0) +
+  see::theme_lucid() +
+  theme(
+    legend.position = "none"
+  ) +
+  see::scale_fill_material_d() +
+  labs(
+    fill = "Sexe",
+    y = "Score total",
+    x = " "
+  )
+```
+
+## Par classe d'âge
+
+```{r}
+#| label: fig-diffbyage
+#| fig-cap: Distribution score total par catégorie d'age
+#| fig-width: 2
+#| fig-height: 4
+
+data_work |>
+  mutate(
+    age_c = ifelse(age_c == "jeune", "Jeunes", "Vieux")
+  ) |>
+  ggplot(
+    aes(
+      x = age_c,
+      y = pasteque_diff,
+      fill = age_c
+    )
+  ) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0) +
+  see::theme_lucid() +
+  theme(
+    legend.position = "none"
+  ) +
+  see::scale_fill_material_d() +
+  labs(
+    fill = "Classe d'âge",
+    y = "Score total",
+    x = " "
+  )
+```
 
 
+:::
 
 # Annexe
 
